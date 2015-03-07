@@ -2,7 +2,12 @@
 
 import           Data.Maybe
 import           Data.Monoid      (mconcat, mempty)
+import           Data.Time
+import           System.Directory
+import           System.Environment
 import           System.Exit 
+import           System.FilePath
+import           System.Locale
 import           Control.Applicative ((<$>))
 import           Control.DeepSeq
 import           Text.PrettyPrint.HughesPJ    
@@ -34,9 +39,16 @@ main = do cfg0     <- getOpts
           exitWith ecode
 
 checkOne :: Config -> FilePath -> IO (Output Doc)
-checkOne cfg0 t = getGhcInfo cfg0 t >>= either errOut (liquidOne t)
+checkOne cfg0 t = stash t >> getGhcInfo cfg0 t >>= either errOut (liquidOne t)
   where
     errOut r    = exitWithResult cfg0 t $ mempty { o_result = r}
+    stash f = do tm <- getCurrentTime
+                 hm <- getEnv "HOME"
+                 let lhdir = hm </> ".cache" </> "liquid"
+                     ts = formatTime defaultTimeLocale (iso8601DateFormat (Just "%H.%M.%S")) tm
+                     f' = lhdir </> f ++ "-" ++ ts
+                 createDirectoryIfMissing True (takeDirectory f')
+                 copyFile f f'
 
 liquidOne :: FilePath -> GhcInfo -> IO (Output Doc) 
 liquidOne target info = 
