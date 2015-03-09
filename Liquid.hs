@@ -43,10 +43,10 @@ checkOne cfg0 t = stash t >> getGhcInfo cfg0 t >>= either errOut (liquidOne t)
   where
     errOut r    = exitWithResult cfg0 t $ mempty { o_result = r}
     stash f = do tm <- getCurrentTime
-                 hm <- getEnv "HOME"
+                 hm <- getHomeDirectory
                  let lhdir = hm </> "liquid-cache"
                      ts = formatTime defaultTimeLocale (iso8601DateFormat (Just "%H.%M.%S")) tm
-                     f' = lhdir </> f ++ "-" ++ ts
+                     f' = lhdir </> makeRelative hm f ++ "-" ++ ts
                  createDirectoryIfMissing True (takeDirectory f')
                  copyFile f f'
 
